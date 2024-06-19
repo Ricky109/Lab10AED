@@ -24,3 +24,5 @@ public class Register<E> implements Comparable<Register<E>> {
 		return this.key+": "+this.value.toString();
 	}
 }
+
+

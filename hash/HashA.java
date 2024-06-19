@@ -41,13 +41,27 @@ public class HashA<E extends Comparable<E>> {
         return key % m;
     }
 
+    private int functionHashSquare(int key) {
+        int square = key * key;
+        return (square / 100) % m;
+    }
+
+    private int functionHashFolding(int key) {
+        int sum = 0;
+        while (key > 0) {
+            sum += key % 100;
+            key /= 100;
+        }
+        return sum % m;
+    }
+
     public void insert(int key, E value) {
-        int index = functionHash(key);
+        int index = functionHash(key); 
         table.get(index).insertLast(new Element(key, value));
     }
 
     public E search(int key) {
-        int index = functionHash(key);
+        int index = functionHash(key); 
         ListLinked<Element> chain = table.get(index);
         Node<Element> current = chain.head;
         while (current != null) {
