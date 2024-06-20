@@ -2,7 +2,7 @@ package hash;
 
 public class TestHash {
     public static void main(String[] args) {
-        // Probando HashC con método del cuadrado
+    	// Probando HashC con método del cuadrado
         System.out.println("Probando HashC con método del cuadrado:");
         HashC<String> hashTableCSquare = new HashC<>(11);
         int[] keysC = {34, 3, 7, 30, 11, 8, 7, 23, 41, 16, 34};
