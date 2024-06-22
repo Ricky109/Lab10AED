@@ -1,7 +1,6 @@
 package hash;
 
 import java.util.ArrayList;
-
 import linkedList.ListLinked;
 import linkedList.Node;
 
