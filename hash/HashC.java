@@ -5,129 +5,165 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class HashC<E extends Comparable<E>> {
-    protected class Element {
-        int mark; 
-        Register<E> reg;
-        int searchLength;
+public class HashC<E extends Comparable <E>>{
+    protected class Element{//Tienen una dependencia fuerte
+        int mark; //0 = libre, 1 = ocupado, -1 = mark eliminacion
+        Register <E> reg;
 
-        public Element(int mark, Register<E> reg, int searchLength) {
+        public Element(int mark, Register<E> reg) {
             this.mark = mark;
             this.reg = reg;
-            this.searchLength = searchLength;
         }
+        
     }
-    
     protected ArrayList<Element> table;
-    protected int m;
+    protected int m; //tamaño de la tabla
 
     public HashC(int n) {
-        this.m = n;
+        this.m = n; //calcular el primo cercano a n y  asignarlo a m
         this.table = new ArrayList<Element>(m);
-        for (int i = 0; i < m; i++) 
-            this.table.add(new Element(0, null, 0));
+        for (int i = 0 ; i < m ; i++)
+            this.table.add(new Element(0, null));
+    }
+    
+    public static int getNextPrime(int n) {
+        while (true) {
+            if (isPrime(n)) return n;
+            n++;
+        }
     }
 
-	public HashC(String fileName) {
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            int n = Integer.parseInt(br.readLine().trim());
-            this.m = nextPrime((int) Math.ceil(n * 1.4));
+    private static boolean isPrime(int n) {
+        if (n <= 1) return false;
+        for (int i = 2; i <= Math.sqrt(n); i++) {
+            if (n % i == 0) return false;
+        }
+        return true;
+    }
+    
+    private int functionHash (int key) {
+        return key % this.m;
+    }
+
+    public void insert (int key, E value) {
+        int dressHash = functionHash(key);
+        dressHash = quadraticProbing(dressHash, key);
+        if(dressHash == -1)
+            System.out.println("Key duplicada ....");
+        else if(dressHash == -2)
+            System.out.println("Tabla Hash llena ....");
+        else{
+            Element ele = new Element(1, new Register<E>(key, value));
+            this.table.set(dressHash,ele);
+        }    
+    }
+
+    private int linearProbing (int dressHash, int key) {
+        int start = dressHash;
+        int temp = -1;
+        do{
+            if (this.table.get(dressHash).mark == 1 && this.table.get(dressHash).reg.key == key)
+                return -1; //key duplicada
+            else
+                if (this.table.get(dressHash).mark == 1)
+                    dressHash = (dressHash+1) % m;
+                else {
+                    if (this.table.get(dressHash).mark == -1){
+                        temp= dressHash;
+                        dressHash = (dressHash+1) % m;
+                    }
+                    if (this.table.get(dressHash).mark == 0)
+                        return temp == -1 ? dressHash : temp;
+                }  
+        }
+        while(dressHash != start);
+        return -2; //tabla esta llena
+    }
+    
+    private int quadraticProbing(int dressHash, int key) {
+        int i = 0;
+        int newHash;
+        while (i < m) {
+            newHash = (dressHash + i * i) % m;
+            if (this.table.get(newHash).mark == 0 || this.table.get(newHash).mark == -1) {
+                return newHash;
+            } else if (this.table.get(newHash).mark == 1 && this.table.get(newHash).reg.key == key) {
+                return -1; // clave duplicada
+            }
+            i++;
+        }
+        return -2; // tabla llena
+    }
+    
+    public E search(int key) {
+        int dressHash = functionHash(key);
+        int start = dressHash;
+
+        while (true) {
+            Element element = this.table.get(dressHash);
+            if (element.mark == 1 && element.reg.key == key) {
+                return element.reg.value;
+            } else if (element.mark == 0) {
+                return null; //NO existe la clave en la tabla
+            }
+            dressHash = (dressHash + 1) % m;
+            if (dressHash == start) {
+                break;
+            }
+        }
+        return null; //NO existe la clave en la tabla
+    }
+    
+    public void remove(int key) {
+        int dressHash = functionHash(key);
+        int start = dressHash;
+        do {
+            if (this.table.get(dressHash).mark == 1 && this.table.get(dressHash).reg.key == key) {
+                this.table.get(dressHash).mark = -1; // Marcar como eliminado
+                return;
+            } else {
+                dressHash = (dressHash + 1) % m;
+            }
+        } while (dressHash != start && this.table.get(dressHash).mark != 0);
+        System.out.println("Key no encontrada ....");
+    }
+
+    public String toString() {
+        String str = "D. Real\tD. Hash\tRegister\n"; 
+        int dirReal=0;
+        for (Element item: this.table) {
+            str+= (dirReal++) + " -->\t";
+            if (item.mark == 1)
+                str += functionHash(item.reg.key) + "\t" +item.reg+"\n";
+            else
+                str+="empty\n";
+        }
+        return str;
+    }
+    
+    //Ejercicio 2
+    public void loadFromFile(String filename){
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            int n = Integer.parseInt(br.readLine());
+            this.m = getNextPrime(n + (int) (0.4 * n)); // Calcular el tamaño de la tabla
+
             this.table = new ArrayList<>(m);
             for (int i = 0; i < m; i++) {
-                this.table.add(new Element(0, null, 0));
+                this.table.add(new Element(0, null));
             }
+
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(" ", 4);
-                int code = Integer.parseInt(parts[0]);
-                String name = parts[1] + " " + parts[2] + " " + parts[3];
-                insert(code, (E) name);
+            	String[] parts = line.split(" ", 4);
+                //trim : para quitar espacios en blanco en los extremos del string
+                int code = Integer.parseInt(parts[0].trim());
+                String name = parts[1].trim();
+                String address = parts[2].trim();
+
+                insert(code, (E) (name + ", " + address));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private int functionHash(int key) {
-        return key % m;
-    }
-
-    private int quadraticProbing(int dressHash, int key) {
-        int originalDressHash = dressHash;
-        int i = 1;
-        while (table.get(dressHash).mark == 1 && table.get(dressHash).reg.getKey() != key) {
-            dressHash = (originalDressHash + i * i) % m;
-            i++;
-            if (i > m) {
-                return -1; 
-            }
-        }
-        return dressHash;
-    }
-
-	private int quadraticProbing(int dressHash, int key, int[] searchLength) {
-        int originalDressHash = dressHash;
-        int i = 0;
-        searchLength[0] = 1;
-        while (table.get(dressHash).mark == 1 && table.get(dressHash).reg.getKey() != key) {
-            i++;
-            dressHash = (originalDressHash + i * i) % m;
-            searchLength[0]++;
-            if (searchLength[0] > m) {
-                return -1; // Tabla llena
-            }
-        }
-        return dressHash;
-    }
-
-   	public void insert(int key, E value) {
-        int dressHash = functionHash(key);
-        int[] searchLength = {1};
-        int pos = quadraticProbing(dressHash, key, searchLength);
-        if (pos != -1) {
-            table.set(pos, new Element(1, new Register<>(key, value), searchLength[0]));
-        } else {
-            System.out.println("Error: La tabla hash está llena");
-        }
-    }
-
-    public E search(int key) {
-        int dressHash = functionHash(key);
-        int pos = quadraticProbing(dressHash, key);
-        if (pos != -1 && table.get(pos).mark == 1) {
-            return table.get(pos).reg.value;
-        }
-        return null;
-    }
-
-    public String toString() {
-        String s = "D.Real\tD.Hash\tRegister\tSearch Length\n";
-        int i = 0;
-        for (Element item : table) {
-            s += (i++) + "--->\t";
-            if (item.mark == 1) {
-                s += functionHash(item.reg.getKey()) + "\t" + item.reg + "\t" + item.searchLength + "\n";
-            } else {
-                s += "empty\n";
-            }
-        }
-        return s;
-    }
-
-	private static int nextPrime(int num) {
-        while (!isPrime(num)) {
-            num++;
-        }
-        return num;
-    }
-
-	private static boolean isPrime(int num) {
-        if (num <= 1) return false;
-        if (num <= 3) return true;
-        if (num % 2 == 0 || num % 3 == 0) return false;
-        for (int i = 5; i * i <= num; i += 6) {
-            if (num % i == 0 || num % (i + 2) == 0) return false;
-        }
-        return true;
     }
 }

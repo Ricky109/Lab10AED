@@ -41,12 +41,14 @@ public class HashA<E extends Comparable<E>> {
         return key % m;
     }
 
-    private int functionHashSquare(int key) {
+    @SuppressWarnings("unused")
+	private int functionHashSquare(int key) {
         int square = key * key;
         return (square / 100) % m;
     }
 
-    private int functionHashFolding(int key) {
+    @SuppressWarnings("unused")
+	private int functionHashFolding(int key) {
         int sum = 0;
         while (key > 0) {
             sum += key % 100;
